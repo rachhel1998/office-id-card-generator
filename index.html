@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wazo ID Card Generator</title>
+
+    <!-- Required Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            /* --primary: #4a84f3; */
+            --primary: #6368ff;
+            --card-top: #1c2130;
+            --card-bottom: #0f121b;
+            --text-muted: #8a94a6;
+            --bg-color: #f0f2f5;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 1150px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* --- FORM STYLES --- */
+        .form-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            height: fit-content;
+        }
+
+        .form-header {
+            margin-bottom: 15px;
+            h2 {
+                margin-top: 0;
+                color: #1a1a1a;
+                margin-bottom: 0px;
+            }
+            span{
+                font-size: 12px;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .photo-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .photo-control-input {
+            padding: 0px !important;
+            margin: 0px !important;
+        }
+
+
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #999;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .btn-download-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-download {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-download:hover {
+            background-color: #3a6ecc;
+        }
+
+        .btn-images {
+            background-color: #333b4d;
+        }
+
+        .btn-images:hover {
+            background-color: #252b39;
+        }
+
+        /* --- ID CARD STYLES --- */
+        .preview-panel {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            background: rgba(220, 225, 230, 0.5);
+            padding: 40px;
+            border-radius: 16px;
+        }
+
+        .card-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .card-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .id-card {
+            width: 319.5px;
+            /* Updated from 320px */
+            height: 510px;
+            /* Updated from 500px */
+            background: linear-gradient(180deg, var(--card-top) 0%, var(--card-bottom) 100%);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        .bg-glow {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(74, 132, 243, 0.08) 0%, rgba(0, 0, 0, 0) 50%);
+            pointer-events: none;
+        }
+
+        /* Front Card specific */
+        .card-header {
+            text-align: center;
+            padding: 30px 20px 15px;
+            z-index: 2;
+        }
+
+        .display-name {
+            color: var(--primary);
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .display-role {
+            color: var(--text-muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 5px 0 0;
+        }
+
+        .card-body {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+            position: relative;
+            /* CRITICAL: Keeps the image and overlay locked inside */
+            overflow: hidden;
+        }
+
+        #display-photo {
+            /* width: 100%; */
+            height: 100%;
+            position: absolute;
+            object-fit: cover;
+            object-position: center;
+            z-index: 1;
+        }
+
+        /* --- THE MISSING GRADIENT BLEND CSS --- */
+        .fade-overlay {
+            position: absolute;
+            bottom: -0px;
+            /* Prevents sharp 1px artifact lines during PDF export */
+            left: 0;
+            width: 100%;
+            height: 10px;
+            /* Adjust this to make the blend taller or shorter */
+            z-index: 2;
+            /* Forces the fade to sit on top of the image */
+
+            /* Fades from transparent to your card's bottom dark color */
+            background: linear-gradient(to bottom, transparent 0%, #0f121b 100%);
+
+            pointer-events: none;
+            /* Prevents the invisible box from blocking clicks */
+        }
+
+        .card-footer {
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .front-logo-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #display-front-logo {
+            width: 30px;
+            border-radius: 5px;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: 1px;
+        }
+
+        .logo-text span {
+            color: var(--primary);
+        }
+
+        .website {
+            color: var(--text-muted);
+            font-size: 10px;
+            letter-spacing: 1px;
+        }
+
+        /* Back Card specific */
+        .back-header {
+            padding: 30px 25px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            width: 75px;
+            height: 75px;
+        }
+
+        #display-back-header-logo {
+            width: 35px;
+            border-radius: 5px;
+        }
+
+        .details-list {
+            padding: 0 30px;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            color: #d1d5db;
+        }
+
+        .detail-item svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--primary);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .detail-text {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .detail-text.small {
+            font-size: 10px;
+            opacity: 0.8;
+        }
+
+        #display-code-back {
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .back-footer {
+            margin-top: auto;
+            position: relative;
+            height: 160px;
+            z-index: 1;
+        }
+
+        .wave-svg {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+
+            path {
+                fill: var(--primary);
+            }
+        }
+
+        .footer-content {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .footer-content h3 {
+            font-size: 13px;
+            margin: 0 0 2px;
+        }
+
+        .footer-content .tc-title {
+            font-size: 10px;
+            opacity: 0.9;
+            margin: 10px 0 5px;
+        }
+
+        .footer-content p {
+            font-size: 8px;
+            text-align: left;
+            margin: 0 0 4px;
+            line-height: 1.2;
+        }
+
+        .footer-content p strong {
+            font-size: 9px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- LEFT: Inputs (Values removed, managed via JS) -->
+        <div class="form-panel">
+            <div class="form-header">
+                <h2>ID Card Details</h2>
+                <span>Card Print - Width: 2.13 & Height: 3.38 inch</span>
+            </div>
+
+            <div class="section-title">Front Details</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Code</label>
+                    <input type="text" id="input-code">
+                </div>
+                <div class="form-group">
+                    <label>Short Name</label>
+                    <input type="text" id="input-name">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="input-fullname">
+            </div>
+            <div class="form-group">
+                <label>Job Role</label>
+                <input type="text" id="input-role">
+            </div>
+            <div class="form-group">
+                <label>Profile Photo</label>
+                <input type="file" id="input-photo" accept="image/*">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="photo-control">
+                        <label for="input-photo-zoom" class="photo-control-label">Zoom</label>
+                        <span class="photo-control-value" id="photo-zoom-value">100%</span>
+                    </div>
+                    <input type="range" class="photo-control-input" id="input-photo-zoom" min="100" max="250"
+                        value="100" step="1">
+                </div>
+                <div class="form-group">
+                    <div class="photo-control">
+                        <label for="input-photo-brightness" class="photo-control-label">Brightness</label>
+                        <span class="photo-control-value" id="photo-brightness-value">100%</span>
+                    </div>
+                    <input type="range" class="photo-control-input" id="input-photo-brightness" min="50" max="180"
+                        value="100" step="1">
+                </div>
+            </div>
+
+            <div class="section-title">Back Details</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Blood Group</label>
+                    <input type="text" id="input-blood">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" id="input-phone">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="input-email">
+            </div>
+            <div class="form-group">
+                <label>Office Address</label>
+                <textarea id="input-address" rows="3"></textarea>
+            </div>
+
+            <div class="btn-download-group">
+                <button class="btn-download" onclick="downloadPDF()">Download as PDF</button>
+                <button class="btn-download btn-images" onclick="downloadImages()">Download as Images</button>
+            </div>
+        </div>
+
+        <!-- RIGHT: Live Preview -->
+        <div class="preview-panel">
+
+            <!-- FRONT CARD -->
+            <div class="card-wrapper">
+                <div class="card-label">Front</div>
+                <div class="id-card" id="card-front">
+                    <div class="bg-glow"></div>
+                    <div class="card-header">
+                        <h1 class="display-name" id="display-name-front"></h1>
+                        <p class="display-role" id="display-role"></p>
+                    </div>
+                    <div class="card-body">
+                        <img id="display-photo" src="Ramen.png" alt="Profile">
+                        <div class="fade-overlay"></div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="front-logo-wrapper">
+                            <img id="display-front-logo" src="image.webp" alt="Logo">
+                            <div class="logo-text">WAZO<br><span>PULSE</span></div>
+                        </div>
+                        <div class="website">@wazo.one</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BACK CARD -->
+            <div class="card-wrapper">
+                <div class="card-label">Back</div>
+                <div class="id-card" id="card-back">
+                    <div class="back-header">
+                        <div class="qr-container" id="qrcode"></div>
+                        <img id="display-back-header-logo" src="image.webp" alt="Logo">
+                    </div>
+                    <div class="details-list">
+                        <div class="detail-item">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            <span class="detail-text" id="display-name-back"></span>
+                            <span class="detail-text" id="display-code-back"></span>
+                        </div>
+                        <div class="detail-item">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                            </svg>
+                            <span class="detail-text" id="display-blood"></span>
+                        </div>
+                        <div class="detail-item">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2">
+                                <path
+                                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                            </svg>
+                            <span class="detail-text" id="display-phone"></span>
+                        </div>
+                        <div class="detail-item">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2">
+                                <rect x="2" y="4" width="20" height="16" rx="2" />
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                            </svg>
+                            <span class="detail-text" id="display-email"></span>
+                        </div>
+                        <div class="detail-item">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                <circle cx="12" cy="10" r="3" />
+                            </svg>
+                            <span class="detail-text small" id="display-address"></span>
+                        </div>
+                    </div>
+                    <div class="back-footer">
+                        <svg class="wave-svg" viewBox="0 0 320 160" preserveAspectRatio="none">
+                            <path d="M0,60 C120,100 200,0 320,40 L320,160 L0,160 Z"></path>
+                        </svg>
+                        <div class="footer-content">
+                            <h3>Wazo Solutions Pvt. LTD</h3>
+                            <p class="tc-title">Terms & Conditions</p>
+                            <p><strong>Identification:</strong> Carry the ID card at all times during working hours for
+                                identification purpose.</p>
+                            <p style="opacity: 0.8; font-style: italic;"><strong
+                                    style="font-style: normal; opacity: 1;">Authorised Use:</strong> The ID card is
+                                strictly for official use and should not be shared or used for unauthorized purpose.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- EASY CONFIGURATION ---
+        // Change these values to set the defaults for the tool
+        const defaultData = {
+            code: "(001)",
+            shortName: "Rachhel",
+            fullName: "Rachhel Sekh",
+            role: "Software Engineer",
+            blood: "A+",
+            phone: "+91 3345397450",
+            email: "hello@wazo.one",
+            address: "4ES8C, 4th floor, MANI CASADONA IT BUILDING, East Tower, AA II, Newtown, West Bengal 700160"
+        };
+
+        // --- State & Binding Logic ---
+        const inputs = {
+            code: document.getElementById('input-code'),
+            shortName: document.getElementById('input-name'),
+            fullName: document.getElementById('input-fullname'),
+            role: document.getElementById('input-role'),
+            blood: document.getElementById('input-blood'),
+            phone: document.getElementById('input-phone'),
+            email: document.getElementById('input-email'),
+            address: document.getElementById('input-address')
+        };
+
+        const displays = {
+            code: document.getElementById('display-code-back'),
+            shortName: document.getElementById('display-name-front'),
+            fullName: document.getElementById('display-name-back'),
+            role: document.getElementById('display-role'),
+            blood: document.getElementById('display-blood'),
+            phone: document.getElementById('display-phone'),
+            email: document.getElementById('display-email'),
+            address: document.getElementById('display-address')
+        };
+
+        let qrCodeInstance = null;
+
+        // Inject the defaults on page load
+        function initializeDefaults() {
+            Object.keys(defaultData).forEach(key => {
+                // Set form inputs
+                if (inputs[key]) {
+                    inputs[key].value = defaultData[key];
+                }
+                // Set ID card display text
+                if (displays[key]) {
+                    displays[key].textContent = defaultData[key];
+                }
+            });
+        }
+
+        function generateQR() {
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+
+            const qrData = "https://wazo.one";
+
+            qrCodeInstance = new QRCode(qrContainer, {
+                text: qrData,
+                width: 60,
+                height: 60,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.L
+            });
+        }
+
+        function setupRealtimeUpdates() {
+            Object.keys(inputs).forEach(key => {
+                inputs[key].addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    if (key === 'name') {
+                        displays.nameFront.textContent = val;
+                        displays.nameBack.textContent = val;
+                    } else {
+                        displays[key].textContent = val;
+                    }
+                    clearTimeout(window.qrTimeout);
+                    window.qrTimeout = setTimeout(generateQR, 300);
+                });
+            });
+
+            // Profile Photo Upload
+            document.getElementById('input-photo').addEventListener('change', function (e) {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        document.getElementById('display-photo').src = e.target.result;
+                        document.getElementById('display-photo').style.display = 'block';
+                    }
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+
+            const photo = document.getElementById('display-photo');
+            const zoomInput = document.getElementById('input-photo-zoom');
+            const brightnessInput = document.getElementById('input-photo-brightness');
+            const zoomValue = document.getElementById('photo-zoom-value');
+            const brightnessValue = document.getElementById('photo-brightness-value');
+
+            function updatePhotoAdjustments() {
+                const zoom = zoomInput.value;
+                const brightness = brightnessInput.value;
+                photo.style.transform = `scale(${zoom / 100})`;
+                photo.style.filter = `brightness(${brightness}%)`;
+                zoomValue.textContent = `${zoom}%`;
+                brightnessValue.textContent = `${brightness}%`;
+            }
+
+            zoomInput.addEventListener('input', updatePhotoAdjustments);
+            brightnessInput.addEventListener('input', updatePhotoAdjustments);
+            updatePhotoAdjustments();
+        }
+
+        async function downloadPDF() {
+            const btn = document.querySelector('.btn-download');
+            const originalText = btn.textContent;
+            btn.textContent = 'Generating PDF...';
+            btn.disabled = true;
+
+            try {
+                const { jsPDF } = window.jspdf;
+                // const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [54, 86] });
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'in', format: [2.13, 3.4] });
+                const config = { scale: 3, useCORS: true, backgroundColor: null };
+
+                const frontCard = document.getElementById('card-front');
+                const frontCanvas = await html2canvas(frontCard, config);
+                // pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, 54, 86);
+                pdf.addImage(frontCanvas.toDataURL('image/png'), 'PNG', 0, 0, 2.13, 3.4);
+
+                pdf.addPage();
+                const backCard = document.getElementById('card-back');
+                const backCanvas = await html2canvas(backCard, config);
+                // pdf.addImage(backCanvas.toDataURL('image/png'), 'PNG', 0, 0, 54, 86);
+                pdf.addImage(backCanvas.toDataURL('image/png'), 'PNG', 0, 0, 2.13, 3.4);
+
+                const fileName = (inputs.shortName.value || 'Employee').replace(/\s+/g, '_') + '_ID.pdf';
+                pdf.save(fileName);
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF. Check console for details.');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function downloadImages() {
+            const btn = document.querySelector('.btn-images');
+            const originalText = btn.textContent;
+            btn.textContent = 'Generating Images...';
+            btn.disabled = true;
+
+            try {
+                const config = { scale: 3, useCORS: true, backgroundColor: null };
+                const cards = [
+                    { element: document.getElementById('card-front'), name: 'front' },
+                    { element: document.getElementById('card-back'), name: 'back' }
+                ];
+                const filePrefix = (inputs.shortName.value || 'Employee').replace(/\s+/g, '_');
+
+                for (const card of cards) {
+                    const canvas = await html2canvas(card.element, config);
+                    const link = document.createElement('a');
+                    link.download = `${filePrefix}_ID_${card.name}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }
+            } catch (error) {
+                console.error('Error generating images:', error);
+                alert('Failed to generate images. Check console for details.');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        window.onload = () => {
+            initializeDefaults();
+            setupRealtimeUpdates();
+            generateQR();
+        };
+    </script>
+</body>
+
+</html>
