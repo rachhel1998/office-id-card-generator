@@ -222,7 +222,7 @@
 
         .display-name {
             color: var(--primary);
-            font-size: 28px;
+            font-size: 30px;
             font-weight: 600;
             margin: 0;
             line-height: 1.2;
@@ -290,7 +290,7 @@
         }
 
         #display-front-logo {
-            width: 30px;
+            width: 32px;
             border-radius: 5px;
         }
 
@@ -303,12 +303,14 @@
         }
 
         .logo-text span {
+            letter-spacing: 0px;
             color: var(--primary);
         }
 
         .website {
             color: var(--text-muted);
-            font-size: 10px;
+            font-size: 14px;
+            font-weight: bold;
             letter-spacing: 1px;
         }
 
@@ -351,20 +353,20 @@
         }
 
         .detail-item svg {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             stroke: var(--primary);
             flex-shrink: 0;
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         .detail-text {
-            font-size: 13px;
+            font-size: 14px;
             line-height: 1.4;
         }
 
         .detail-text.small {
-            font-size: 10px;
+            font-size: 12px;
             opacity: 0.8;
         }
 
@@ -403,25 +405,25 @@
         }
 
         .footer-content h3 {
-            font-size: 13px;
+            font-size: 16px;
             margin: 0 0 2px;
         }
 
         .footer-content .tc-title {
-            font-size: 10px;
-            opacity: 0.9;
+            font-size: 12px;
+            font-weight: 500;
             margin: 10px 0 5px;
         }
 
         .footer-content p {
-            font-size: 8px;
+            font-size: 10px;
             text-align: left;
             margin: 0 0 4px;
             line-height: 1.2;
         }
 
         .footer-content p strong {
-            font-size: 9px;
+            font-size: 10px;
         }
     </style>
 </head>
@@ -584,10 +586,10 @@
                         <div class="footer-content">
                             <h3>Wazo Solutions Pvt. LTD</h3>
                             <p class="tc-title">Terms & Conditions</p>
-                            <p><strong>Identification:</strong> Carry the ID card at all times during working hours for
+                            <p style="opacity: 0.8;"><strong>Identification:</strong> Carry the ID card at all times during working hours for
                                 identification purpose.</p>
-                            <p style="opacity: 0.8; font-style: italic;"><strong
-                                    style="font-style: normal; opacity: 1;">Authorised Use:</strong> The ID card is
+                            <p style="opacity: 0.8; font-style: italic;">
+                                <strong>Authorised Use:</strong> The ID card is
                                 strictly for official use and should not be shared or used for unauthorized purpose.</p>
                         </div>
                     </div>
@@ -601,14 +603,14 @@
         // --- EASY CONFIGURATION ---
         // Change these values to set the defaults for the tool
         const defaultData = {
-            code: "(001)",
+            code: "", // (001)
             shortName: "Rachhel",
             fullName: "Rachhel Sekh",
-            role: "Software Engineer",
+            role: "", // Software Engineer
             blood: "A+",
             phone: "+91 3345397450",
             email: "hello@wazo.one",
-            address: "4ES8C, 4th floor, MANI CASADONA IT BUILDING, East Tower, AA II, Newtown, West Bengal 700160"
+            address: "4ES8C, 4th floor, MANI CASADONA, East Tower, AA II, Newtown, West Bengal 700160"
         };
 
         // --- State & Binding Logic ---
