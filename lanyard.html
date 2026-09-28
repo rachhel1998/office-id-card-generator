@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Lanyard Artwork Studio</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+	<style>
+		:root {
+			color-scheme: light;
+			--ink: #182124;
+			--muted: #6d797b;
+			--line: #d8dfdc;
+			--paper: #f4f5f1;
+			--accent: #d34f35;
+			--green: #d7f15e;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			margin: 0;
+			background: var(--paper);
+			color: var(--ink);
+			font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+		}
+
+		.topbar {
+			height: 64px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0 5vw;
+			border-bottom: 1px solid var(--line);
+			background: #fbfcf9;
+		}
+
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 11px;
+			font-size: 14px;
+			font-weight: 750;
+			letter-spacing: .02em;
+		}
+
+		.brand-mark {
+			width: 22px;
+			height: 22px;
+			display: grid;
+			place-items: center;
+			background: var(--green);
+			border-radius: 50%;
+			font-size: 12px;
+		}
+
+		.topbar-note {
+			color: var(--muted);
+			font-size: 12px;
+			font-weight: 600;
+		}
+
+		main {
+			width: 96vw;
+			margin: 54px auto 72px;
+		}
+
+		.intro {
+			display: flex;
+			align-items: end;
+			justify-content: space-between;
+			gap: 24px;
+			padding-bottom: 27px;
+			border-bottom: 1px solid var(--line);
+		}
+
+		.eyebrow {
+			margin: 0 0 10px;
+			color: var(--accent);
+			font-size: 11px;
+			font-weight: 800;
+			letter-spacing: .12em;
+			text-transform: uppercase;
+		}
+
+		h1 {
+			margin: 0;
+			font-size: clamp(30px, 4vw, 44px);
+			line-height: 1.05;
+			letter-spacing: 0;
+		}
+
+		.spec {
+			flex: 0 0 auto;
+			padding: 10px 13px;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			background: #fbfcf9;
+			font-size: 12px;
+			font-weight: 700;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.workspace {
+			display: flex;
+			flex-direction: column;
+			gap: 30px;
+			padding-top: 30px;
+		}
+
+		.controls {
+			display: grid;
+			grid-template-columns: minmax(220px, 1.1fr) minmax(160px, .8fr) minmax(180px, .9fr) minmax(200px, 1fr) minmax(220px, 1fr) minmax(170px, .8fr);
+			align-items: end;
+			gap: 20px;
+		}
+
+		.field { display: grid; gap: 9px; }
+
+		.field label, .field-label {
+			font-size: 12px;
+			font-weight: 750;
+		}
+
+		.field-hint { color: var(--muted); font-size: 11px; line-height: 1.5; }
+
+		.upload {
+			min-height: 136px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 9px;
+			padding: 18px;
+			border: 1px dashed #9ca9a5;
+			border-radius: 4px;
+			background: #fbfcf9;
+			cursor: pointer;
+			text-align: center;
+		}
+
+		.upload:hover { border-color: var(--accent); }
+		.upload-icon { font-size: 23px; line-height: 1; color: var(--accent); }
+		.upload strong { font-size: 12px; }
+		.upload span { max-width: 100%; overflow-wrap: anywhere; color: var(--muted); font-size: 11px; }
+		.upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+		.number-input {
+			width: 100%;
+			height: 44px;
+			padding: 0 12px;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			background: #fbfcf9;
+			color: var(--ink);
+			font: inherit;
+			font-size: 14px;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.number-input:focus-visible, .upload:focus-within, button:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: 2px;
+		}
+
+		.zoom-control {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			align-items: center;
+			gap: 10px;
+			min-height: 44px;
+		}
+
+		.zoom-control input { width: 100%; accent-color: var(--accent); }
+		.zoom-value { min-width: 38px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
+		.zoom-scale { grid-column: 1; display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+		.gap-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+		.gap-input { display: grid; gap: 5px; color: var(--muted); font-size: 10px; }
+		.gap-input .number-input { padding: 0 8px; }
+
+		.settings {
+			display: grid;
+			border-top: 1px solid var(--line);
+		}
+
+		.setting {
+			min-height: 44px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 14px;
+			border-bottom: 1px solid var(--line);
+			font-size: 12px;
+		}
+
+		.setting span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+		.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+		button {
+			min-height: 45px;
+			padding: 0 12px;
+			border: 1px solid var(--ink);
+			border-radius: 4px;
+			background: transparent;
+			color: var(--ink);
+			font: inherit;
+			font-size: 12px;
+			font-weight: 750;
+			cursor: pointer;
+		}
+
+		button.primary { background: var(--ink); color: white; }
+		button.primary:hover:not(:disabled) { background: #344246; }
+		button:hover:not(:disabled) { border-color: var(--accent); }
+		button:disabled { opacity: .42; cursor: not-allowed; }
+
+		.preview { min-width: 0; }
+
+		.preview-head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			margin-bottom: 12px;
+		}
+
+		.preview-title { font-size: 12px; font-weight: 800; }
+		.preview-meta { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+		.preview-stage {
+			min-height: 260px;
+			display: grid;
+			place-items: center;
+			padding: clamp(20px, 4vw, 44px);
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			background-color: #e8ece8;
+			background-image: radial-gradient(#c4ccc7 .75px, transparent .75px);
+			background-size: 12px 12px;
+			overflow: hidden;
+		}
+
+		#lanyardPreview {
+			display: block;
+			width: 100%;
+			height: auto;
+			box-shadow: 0 8px 22px rgb(24 33 36 / 20%);
+		}
+
+		.legend {
+			display: flex;
+			justify-content: space-between;
+			gap: 12px;
+			margin-top: 11px;
+			color: var(--muted);
+			font-size: 10px;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.legend span { display: flex; align-items: center; gap: 7px; }
+		.swatch { width: 10px; height: 10px; display: inline-block; border: 1px solid #aeb8b3; background: #050606; }
+		.margin-swatch { width: 10px; height: 10px; display: inline-block; border: 1px solid #aeb8b3; background: repeating-linear-gradient(135deg, #fff 0 2px, #dfe5e0 2px 4px); }
+
+		@media (max-width: 760px) {
+			.topbar { padding: 0 5vw; }
+			.topbar-note { font-size: 10px; }
+			main { width: 90vw; margin-top: 34px; }
+			.intro { align-items: start; flex-direction: column; }
+			.workspace { gap: 26px; }
+			.controls { grid-template-columns: 1fr; gap: 18px; }
+			.preview-stage { min-height: 180px; }
+		}
+
+		@media (min-width: 761px) and (max-width: 1480px) {
+			.controls { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+		}
+	</style>
+</head>
+<body>
+	<header class="topbar">
+		<div class="brand"><span class="brand-mark" aria-hidden="true">L</span> Lanyard Artwork Studio</div>
+		<div class="topbar-note">PRINT LAYOUT / 01</div>
+	</header>
+	<main>
+		<section class="intro" aria-labelledby="page-title">
+			<div>
+				<p class="eyebrow">Production artwork</p>
+				<h1 id="page-title">Build your lanyard</h1>
+			</div>
+			<div class="spec">FINISHED SIZE &nbsp; 20 × 914.4 mm</div>
+		</section>
+		<section class="workspace">
+			<div class="preview">
+				<div class="preview-head">
+					<span class="preview-title">Strip preview</span>
+					<span class="preview-meta" id="previewMeta">Upload an image to begin</span>
+				</div>
+				<div class="preview-stage">
+					<canvas id="lanyardPreview" aria-label="Lanyard artwork preview"></canvas>
+				</div>
+				<div class="legend">
+					<span><i class="swatch" aria-hidden="true"></i> Black background</span>
+					<span><i class="margin-swatch" aria-hidden="true"></i> <span id="gapLegend">31.75 mm left / 31.75 mm right</span></span>
+				</div>
+			</div>
+			<div class="controls">
+				<div class="field">
+					<span class="field-label">Artwork image</span>
+					<label class="upload" for="imageUpload">
+						<span class="upload-icon" aria-hidden="true">＋</span>
+						<strong>Choose an image</strong>
+						<span id="fileName">PNG, JPG, or WebP</span>
+						<input id="imageUpload" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+					</label>
+				</div>
+				<div class="field">
+					<label for="copyCount">Number of copies</label>
+					<input class="number-input" id="copyCount" type="number" min="1" max="100" value="6" inputmode="numeric">
+					<span class="field-hint">Copies are centered and evenly distributed along the strap.</span>
+				</div>
+				<div class="field">
+					<label for="imageZoom">Artwork zoom</label>
+					<div class="zoom-control">
+						<input id="imageZoom" type="range" min="-100" max="100" step="5" value="0" aria-describedby="zoomValue">
+						<output class="zoom-value" id="zoomValue" for="imageZoom">0</output>
+						<div class="zoom-scale" aria-hidden="true"><span>-100</span><span>0</span><span>100</span></div>
+					</div>
+				</div>
+				<div class="field">
+					<span class="field-label">End gaps (mm)</span>
+					<div class="gap-pair">
+						<label class="gap-input" for="leftEndGap">Left
+							<input class="number-input" id="leftEndGap" type="number" min="0" max="450" step="0.05" value="31.75" inputmode="decimal">
+						</label>
+						<label class="gap-input" for="rightEndGap">Right
+							<input class="number-input" id="rightEndGap" type="number" min="0" max="450" step="0.05" value="31.75" inputmode="decimal">
+						</label>
+					</div>
+				</div>
+				<div class="settings" aria-label="Print settings">
+					<div class="setting"><span>Background</span><span>Black</span></div>
+					<div class="setting"><span>Output resolution</span><span>300 DPI</span></div>
+				</div>
+				<div class="actions">
+					<button class="primary" id="downloadPdf" type="button" disabled>↓ &nbsp; PDF</button>
+					<button id="downloadPng" type="button" disabled>↓ &nbsp; PNG</button>
+				</div>
+			</div>
+		</section>
+	</main>
+	<script>
+		(() => {
+			const LENGTH_MM = 914.4;
+			const WIDTH_MM = 20;
+			const MAX_GAP_MM = 450;
+			const DPI = 300;
+			const MM_PER_INCH = 25.4;
+			const SCALE = DPI / MM_PER_INCH;
+			const canvas = document.getElementById('lanyardPreview');
+			const context = canvas.getContext('2d');
+			const upload = document.getElementById('imageUpload');
+			const countInput = document.getElementById('copyCount');
+			const zoomInput = document.getElementById('imageZoom');
+			const zoomValue = document.getElementById('zoomValue');
+			const leftGapInput = document.getElementById('leftEndGap');
+			const rightGapInput = document.getElementById('rightEndGap');
+			const gapLegend = document.getElementById('gapLegend');
+			const pdfButton = document.getElementById('downloadPdf');
+			const pngButton = document.getElementById('downloadPng');
+			const fileName = document.getElementById('fileName');
+			const previewMeta = document.getElementById('previewMeta');
+			let artwork = null;
+
+			canvas.width = Math.round(LENGTH_MM * SCALE);
+			canvas.height = Math.round(WIDTH_MM * SCALE);
+			context.fillStyle = '#000000';
+			context.fillRect(0, 0, canvas.width, canvas.height);
+
+			function render() {
+				context.fillStyle = '#000000';
+				context.fillRect(0, 0, canvas.width, canvas.height);
+
+				const count = Math.max(1, Math.min(100, Number.parseInt(countInput.value, 10) || 1));
+				if (countInput.value !== String(count)) countInput.value = String(count);
+				const leftGap = Math.min(MAX_GAP_MM, Math.max(0, Number.parseFloat(leftGapInput.value) || 0));
+				const rightGap = Math.min(MAX_GAP_MM, Math.max(0, Number.parseFloat(rightGapInput.value) || 0));
+				const zoomOffset = Number(zoomInput.value);
+				zoomValue.value = zoomOffset > 0 ? `+${zoomOffset}` : String(zoomOffset);
+				const formatMm = (value) => Number(value.toFixed(2)).toString();
+				gapLegend.textContent = `${formatMm(leftGap)} mm left / ${formatMm(rightGap)} mm right`;
+				pdfButton.disabled = !artwork;
+				pngButton.disabled = !artwork;
+				previewMeta.textContent = artwork ? `${count} ${count === 1 ? 'copy' : 'copies'} · 300 DPI` : 'Upload an image to begin';
+				if (!artwork) return;
+
+				const usableLength = LENGTH_MM - leftGap - rightGap;
+				const slotLength = usableLength / count;
+				const maxImageLength = slotLength * 0.76;
+				const maxImageHeight = WIDTH_MM * 0.8;
+				const zoomFactor = zoomOffset < 0 ? 1 + zoomOffset / 200 : 1 + zoomOffset / 500;
+				const imageScale = Math.min(maxImageLength / artwork.width, maxImageHeight / artwork.height) * zoomFactor;
+				const imageWidth = artwork.width * imageScale * SCALE;
+				const imageHeight = artwork.height * imageScale * SCALE;
+				const centerY = canvas.height / 2;
+
+				for (let index = 0; index < count; index += 1) {
+					const centerX = (leftGap + slotLength * (index + 0.5)) * SCALE;
+					context.drawImage(artwork, centerX - imageWidth / 2, centerY - imageHeight / 2, imageWidth, imageHeight);
+				}
+			}
+
+			upload.addEventListener('change', () => {
+				const file = upload.files && upload.files[0];
+				if (!file) return;
+				const nextArtwork = new Image();
+				nextArtwork.onload = () => {
+					artwork = nextArtwork;
+					fileName.textContent = file.name;
+					render();
+					URL.revokeObjectURL(nextArtwork.src);
+				};
+				nextArtwork.onerror = () => {
+					fileName.textContent = 'Could not load image. Choose another file.';
+				};
+				nextArtwork.src = URL.createObjectURL(file);
+			});
+
+			countInput.addEventListener('input', render);
+			zoomInput.addEventListener('input', render);
+			leftGapInput.addEventListener('input', render);
+			rightGapInput.addEventListener('input', render);
+
+			pngButton.addEventListener('click', () => {
+				canvas.toBlob((blob) => {
+					if (!blob) return;
+					const url = URL.createObjectURL(blob);
+					const link = document.createElement('a');
+					link.href = url;
+					link.download = 'lanyard-artwork-300dpi.png';
+					link.click();
+					URL.revokeObjectURL(url);
+				}, 'image/png');
+			});
+
+			pdfButton.addEventListener('click', () => {
+				if (!artwork || !window.jspdf) {
+					window.alert('PDF export is unavailable. Check your connection and try again.');
+					return;
+				}
+				const { jsPDF } = window.jspdf;
+				const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [LENGTH_MM, WIDTH_MM], compress: true });
+				pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, LENGTH_MM, WIDTH_MM);
+				pdf.save('lanyard-artwork-20x914.4mm.pdf');
+			});
+
+			render();
+		})();
+	</script>
+</body>
+</html>
